@@ -1,0 +1,34 @@
+{
+  "title": "CovaU",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sign in to CovaU",
+        "description": "Enter your CovaU account number and password. For reauthentication, use the same account number.",
+        "data": {
+          "account_number": "Account number",
+          "password": "Password"
+        }
+      },
+      "account": {
+        "title": "Select an energy account",
+        "description": "Choose the service to monitor. Add this integration again to monitor another service.",
+        "data": {
+          "service_id": "Energy account / service"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "CovaU rejected the account number or password.",
+      "cannot_connect": "Cannot connect securely to CovaU. Check Internet access, including outbound TCP port 3011.",
+      "invalid_response": "CovaU returned an unsupported response. The provider may have changed its API.",
+      "no_accounts": "CovaU did not return any selectable services.",
+      "wrong_account": "Reauthenticate using the same account number as this integration entry.",
+      "service_unavailable": "The selected service is not available to this account."
+    },
+    "abort": {
+      "already_configured": "This account and service are already configured.",
+      "reauth_successful": "CovaU authentication was updated."
+    }
+  }
+}

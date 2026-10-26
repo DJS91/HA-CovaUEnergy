@@ -1,0 +1,10 @@
+{
+  "domain": "covau",
+  "name": "CovaU",
+  "version": "0.1.0",
+  "config_flow": true,
+  "documentation": "https://www.covau.com.au/",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "codeowners": []
+}
