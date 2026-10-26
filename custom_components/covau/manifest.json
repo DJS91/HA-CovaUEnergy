@@ -6,5 +6,7 @@
   "documentation": "https://www.covau.com.au/",
   "iot_class": "cloud_polling",
   "requirements": [],
-  "codeowners": []
+  "documentation": "https://github.com/DJS91/HA-CovaUEnergy",
+  "issue_tracker": "https://github.com/DJS91/HA-CovaUEnergy/issues",
+  "codeowners": ["@DJS91"]
 }
