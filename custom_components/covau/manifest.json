@@ -1,12 +1,13 @@
 {
   "domain": "covau",
   "name": "CovaU",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "config_flow": true,
-  "documentation": "https://www.covau.com.au/",
+  "documentation": "https://github.com/DJS91/HA-CovaUEnergy",
   "iot_class": "cloud_polling",
   "requirements": [],
-  "documentation": "https://github.com/DJS91/HA-CovaUEnergy",
   "issue_tracker": "https://github.com/DJS91/HA-CovaUEnergy/issues",
-  "codeowners": ["@DJS91"]
+  "codeowners": [
+    "@DJS91"
+  ]
 }
