@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Increment patch version
+        id: version
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          manifest_path = Path("custom_components/covau/manifest.json")
+          manifest = json.loads(manifest_path.read_text())
+          major, minor, patch = (int(part) for part in manifest["version"].split("."))
+          version = f"{major}.{minor}.{patch + 1}"
+          manifest["version"] = version
+          manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"version={version}\n")
+          PY
+
+      - name: Commit version and tag release
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add custom_components/covau/manifest.json
+          git commit -m "chore(release): v${VERSION}"
+          git tag -a "v${VERSION}" -m "CovaU v${VERSION}"
+          git push origin HEAD:main "v${VERSION}"
+
+      - name: Package integration
+        run: zip -qr covau.zip custom_components/covau -x '*/__pycache__/*' '*.pyc'
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: gh release create "v${VERSION}" covau.zip --title "CovaU v${VERSION}" --generate-notes

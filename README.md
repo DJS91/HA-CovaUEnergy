@@ -33,17 +33,27 @@ Add the integration again for another service. The internal service identifier
 (`seqProductItemId`) is taken from the selected lookup entry, not entered manually.
 No YAML configuration, API key or copied browser cookies are required.
 
+## Releases and updates
+
+Every push to `main` creates a patch release. GitHub Actions increments the
+version in `custom_components/covau/manifest.json`, publishes a matching `vX.Y.Z`
+GitHub Release, and attaches `covau.zip`. HACS uses published release tags to
+identify new versions, so install this repository through HACS to see its updates.
+HACS makes updates available in Home Assistant; applying them is a separate
+update action. A manually copied installation must be updated by replacing its
+integration files.
+
 ## Refresh schedule
 
 All four sections refresh together:
 
 - Immediately when the integration loads, including after a Home Assistant restart.
-- Every day at **05:00 in Home Assistant's configured local timezone**.
+- At the start of every hour in Home Assistant's configured local timezone.
 - On a manual refresh through `homeassistant.update_entity` for an enabled CovaU sensor.
 
 This uses a local wall-clock listener rather than a 24-hour polling interval, so
 Home Assistant handles timezone and daylight-saving changes. The listener is removed
-when the entry unloads. If Home Assistant is off at 05:00, the startup refresh retrieves
+when the entry unloads. If Home Assistant is off, the startup refresh retrieves
 the data when it starts again. Provider reporting can lag; refreshing does not make
 unpublished readings available.
 
@@ -173,7 +183,7 @@ uv run --group test --group homeassistant-test pytest -q
 
 Without the optional Home Assistant dependency, those tests are explicitly skipped;
 no fake Home Assistant package is substituted. They cover configuration-flow logic,
-reauthentication, setup/unload calls, sensor identity/privacy and the 05:00 timer contract.
+reauthentication, setup/unload calls, sensor identity/privacy and the hourly timer contract.
 They are unit tests, not a full Home Assistant installation or DST simulation.
 
 Validation performed during development: API/data tests and Python syntax/lint.

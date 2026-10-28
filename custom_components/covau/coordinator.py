@@ -1,4 +1,4 @@
-"""Daily local-time refresh of CovaU data."""
+"""Hourly local-time refresh of CovaU data."""
 
 import logging
 from datetime import datetime
@@ -18,7 +18,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class CovaUCoordinator(DataUpdateCoordinator[dict[str, Value]]):
-    """Refresh on setup and at 05:00 in Home Assistant's timezone."""
+    """Refresh on setup and at the start of each hour in Home Assistant's timezone."""
 
     def __init__(
         self,
@@ -31,10 +31,10 @@ class CovaUCoordinator(DataUpdateCoordinator[dict[str, Value]]):
         self._client = client
         self._service_id = service_id
 
-    def schedule_daily(self, entry: ConfigEntry) -> None:
+    def schedule_hourly(self, entry: ConfigEntry) -> None:
         """Tie the local wall-clock listener to this entry's lifecycle."""
         entry.async_on_unload(
-            async_track_time_change(self.hass, self._scheduled_refresh, hour=5, minute=0, second=0)
+            async_track_time_change(self.hass, self._scheduled_refresh, minute=0, second=0)
         )
 
     async def _scheduled_refresh(self, now: datetime) -> None:

@@ -51,12 +51,12 @@ async def test_setup_first_refresh_then_forward_then_schedule():
         assert config_entry.runtime_data is coordinator
         coordinator.async_config_entry_first_refresh.assert_awaited_once()
         hass.config_entries.async_forward_entry_setups.assert_awaited_once()
-        coordinator.schedule_daily.assert_called_once_with(config_entry)
+        coordinator.schedule_hourly.assert_called_once_with(config_entry)
         assert await async_unload_entry(hass, config_entry)
         hass.config_entries.async_unload_platforms.assert_awaited_once()
 
 
-async def test_scheduler_is_local_0500_and_unsubscribes():
+async def test_scheduler_is_local_hourly_and_unsubscribes():
     # Exercise our exact registration/callback contract; HA owns clock and DST handling.
     coordinator = object.__new__(CovaUCoordinator)
     coordinator.hass = MagicMock()
@@ -67,11 +67,11 @@ async def test_scheduler_is_local_0500_and_unsubscribes():
         "custom_components.covau.coordinator.async_track_time_change",
         return_value=unsubscribe,
     ) as track:
-        coordinator.schedule_daily(config_entry)
+        coordinator.schedule_hourly(config_entry)
         args, kwargs = track.call_args
         assert args[0] is coordinator.hass
-        assert kwargs == {"hour": 5, "minute": 0, "second": 0}
-        await args[1](datetime(2026, 10, 25, 5))
+        assert kwargs == {"minute": 0, "second": 0}
+        await args[1](datetime(2026, 10, 25, 6))
         coordinator.async_request_refresh.assert_awaited_once()
         config_entry.async_on_unload.assert_called_once_with(unsubscribe)
         config_entry.async_on_unload.call_args.args[0]()
