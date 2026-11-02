@@ -1,7 +1,7 @@
 # <img src="custom_components/covau/brand/icon.png" alt="CovaU logo" width="48" align="absmiddle"> CovaU for Home Assistant
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-[![GitHub Release](https://img.shields.io/github/release/DJS91/HA-CovaUEnergy.svg)](https://github.com/DJS91/HA-CovaUEnergy/releases)
+[![GitHub Release](https://img.shields.io/github/v/release/DJS91/HA-CovaUEnergy.svg)](https://github.com/DJS91/HA-CovaUEnergy/releases)
 
 Unofficial, read-only custom integration using the CovaU mobile login and My Account
 portal endpoints. It is not affiliated with or supported by CovaU.
