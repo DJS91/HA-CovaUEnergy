@@ -1,4 +1,4 @@
-# CovaU for Home Assistant
+# <img src="custom_components/covau/brand/icon.png" alt="CovaU logo" width="48" align="absmiddle"> CovaU for Home Assistant
 
 Unofficial, read-only custom integration using the CovaU mobile login and My Account
 portal endpoints. It is not affiliated with or supported by CovaU.
@@ -7,6 +7,12 @@ portal endpoints. It is not affiliated with or supported by CovaU.
 
 Target: **Home Assistant 2026.10 or newer**. The configuration flow uses that
 release's `probatio` schema API. Older releases have not been validated.
+
+### HACS
+
+[![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=DJS91&repository=HA-CovaUEnergy&category=integration)
+
+### Manual
 
 1. Copy the complete `custom_components/covau` directory into your Home Assistant
    configuration directory, retaining this structure:
