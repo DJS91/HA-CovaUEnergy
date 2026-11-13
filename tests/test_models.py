@@ -29,13 +29,45 @@ def test_pricing_keeps_cents_zero_negatives_and_unknown_gst(snapshot):
     assert negative.attributes["start_date"] == "2026-07-01"
     assert negative.attributes["rate_basis"] == "ex GST"
     assert stable_key("price", "Free Usage - Step 1", "c/kWh", "unitRate") not in values
-    assert (
-        values[stable_key("price", "Free Usage - Step 1", "c/kWh", "unitRateIncGst")].state is None
-    )
+    assert values[stable_key("price", "Free Usage - Step 1", "c/kWh", "unitRateIncGst")].state == 0
     assert (
         values[stable_key("price", "Daily Supply Charge", "c/Day", "unitRateIncGst")].state
         == 151.998
     )
+
+
+@pytest.mark.parametrize(
+    ("inclusive", "exclusive", "expected", "basis"),
+    [
+        ("", "0.00", 0.0, "ex GST"),
+        (None, "0.00", 0.0, "ex GST"),
+        ("   ", "0.00", 0.0, "ex GST"),
+        ("0", "7", 0.0, "inc GST"),
+        ("2", "7", 2.0, "inc GST"),
+        ("", "", None, "unknown"),
+        (None, "  ", None, "unknown"),
+    ],
+)
+def test_free_usage_prefers_available_rate(snapshot, inclusive, exclusive, expected, basis):
+    row = snapshot["pricings"][3]
+    row.update(unitRateIncGst=inclusive, unitRate=exclusive)
+    key = stable_key("price", row["usageDesc"], row["unitDesc"], "unitRateIncGst")
+    value = normalize(snapshot, "123", TODAY)[key]
+    assert value.state == expected
+    assert value.attributes["rate_basis"] == basis
+
+
+def test_invalid_free_usage_rate_is_not_silently_skipped(snapshot):
+    snapshot["pricings"][3]["unitRateIncGst"] = "invalid"
+    with pytest.raises(CovaUDataError, match="Invalid numeric value"):
+        normalize(snapshot, "123", TODAY)
+
+
+def test_missing_inc_gst_for_non_free_usage_remains_unknown(snapshot):
+    row = snapshot["pricings"][1]
+    row["unitRateIncGst"] = ""
+    key = stable_key("price", row["usageDesc"], row["unitDesc"], "unitRateIncGst")
+    assert normalize(snapshot, "123", TODAY)[key].state is None
 
 
 @pytest.mark.parametrize(

@@ -203,7 +203,6 @@ async def test_cost_setup_maps_usage_and_supply(snapshot):
 
 
 async def test_usage_tariff_options_show_current_rate(snapshot):
-    snapshot["pricings"][3]["unitRateIncGst"] = "0"
     snapshot["pricings"].append(
         {"usageDesc": "Unavailable", "unitDesc": "c/kWh", "unitRateIncGst": None}
     )
@@ -223,7 +222,7 @@ async def test_usage_tariff_options_show_current_rate(snapshot):
         "Feed-in Peak - Step 1 (-15.0 c/kWh, ex GST)"
     )
     assert options[stable_key("price", "Free Usage - Step 1", "c/kWh", "unitRateIncGst")] == (
-        "Free Usage - Step 1 (0.0 c/kWh, inc GST)"
+        "Free Usage - Step 1 (0.0 c/kWh, ex GST)"
     )
     assert options[stable_key("price", "Unavailable", "c/kWh", "unitRateIncGst")] == (
         "Unavailable (Unknown c/kWh, inc GST)"

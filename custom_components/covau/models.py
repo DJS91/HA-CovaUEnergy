@@ -178,17 +178,37 @@ def normalize(snapshot: dict[str, Any], service_id: str, today: date) -> dict[st
         if chosen:
             active_count += 1
         feed_in = re.search(r"\b(?:feed[\s-]*in|fit)\b", description, re.IGNORECASE) is not None
+        free_usage = (
+            not feed_in
+            and re.search(r"\bfree[\s-]+usage\b", description, re.IGNORECASE) is not None
+        )
         rate_field = "unitRate" if feed_in else "unitRateIncGst"
         rate_basis = "ex GST" if feed_in else "inc GST"
+        rate = number(chosen[2].get(rate_field)) if chosen and not free_usage else None
+        if free_usage:
+            rate_basis = "unknown"
+            if chosen:
+                for field_name, basis in (("unitRateIncGst", "inc GST"), ("unitRate", "ex GST")):
+                    raw = chosen[2].get(field_name)
+                    if raw is None or (isinstance(raw, str) and not raw.strip()):
+                        continue
+                    rate = number(raw)
+                    rate_basis = basis
+                    break
         attrs = {
             "tariff": description,
             "start_date": chosen[0].isoformat() if chosen and chosen[0] else None,
             "end_date": chosen[1].isoformat() if chosen and chosen[1] else None,
             "rate_basis": rate_basis,
         }
+        name = f"Price {description}"
+        if feed_in:
+            name += " (ex GST)"
+        elif not free_usage:
+            name += " inc GST"
         result[stable_key("price", description, unit, "unitRateIncGst")] = Value(
-            f"Price {description} ({rate_basis})" if feed_in else f"Price {description} inc GST",
-            number(chosen[2].get(rate_field)) if chosen else None,
+            name,
+            rate,
             unit=unit,
             attributes=attrs,
         )

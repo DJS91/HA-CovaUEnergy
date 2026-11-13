@@ -109,7 +109,9 @@ Recording the history attributes can increase database size.
 ### Pricings
 
 - **Active pricings**: number of distinct currently effective tariff description/unit pairs.
-- **Price DESCRIPTION inc GST** per consumption or supply tariff.
+- **Price DESCRIPTION inc GST** per consumption or supply tariff, except free usage.
+- **Price DESCRIPTION** per free-usage tariff, using the inc-GST rate when present
+  and otherwise the ex-GST rate.
 - **Price DESCRIPTION (ex GST)** per feed-in tariff, using CovaU's supplied ex-GST rate.
 - Units are retained exactly as supplied: for example `c/Day` and `c/kWh`, not dollars.
 - Zero/free and negative/feed-in prices are retained.
@@ -117,7 +119,8 @@ Recording the history attributes can increase database size.
 - Attributes include the tariff description and effective start/end dates.
 
 Feed-in tariffs are identified by `feed-in`, `feed in` or `FiT` in their
-provider descriptions. Their rate basis is also exposed as an attribute.
+provider descriptions. Free-usage tariffs are identified by `free usage` or
+`free-usage`. Each price sensor exposes its rate basis as an attribute.
 
 For successive tariff periods with the same description/unit, the most recently
 started currently effective period is selected. Non-effective tariffs are unknown.
@@ -136,10 +139,11 @@ Map all applicable categories and supply charges to include them in the total.
 
 The cycle starts on the selected day each month, or the last day in shorter months.
 Usage costs cover available completed daily readings through yesterday; selected
-daily supply charges include today. The **current** inc-GST rates for consumption
-and supply and ex-GST rates for feed-in are applied to the entire cycle, not
-historical rates. The result is an estimate, not an invoice: tariff tiers,
-discounts, credits and other charges are not inferred.
+daily supply charges include today. The **current** selected rates are applied to
+the entire cycle, not historical rates. Feed-in uses the ex-GST rate, while free
+usage may use an ex-GST rate if the inc-GST rate is missing. The result is an
+estimate, not an invoice: tariff tiers, discounts, credits and other charges are
+not inferred.
 
 Each cost sensor exposes `cycle_start` and `partial` attributes. Missing readings,
 unavailable rates, and incompatible or unknown usage units make the estimate

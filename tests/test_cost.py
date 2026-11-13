@@ -153,3 +153,16 @@ def test_zero_feed_in_rate_is_a_known_zero_cost(snapshot):
     assert costs[f"cost_{FEED_RATE}"].state == 0
     assert costs["cost_total"].attributes["partial"] is False
     assert costs["cost_total"].attributes["rate_basis"] == "current ex GST"
+
+
+def test_free_usage_uses_available_rate_for_cost(snapshot):
+    values = normalize(snapshot, "123", TODAY)
+    usage = stable_key("usage", "Off Peak - Free")
+    rate = stable_key("price", "Free Usage - Step 1", "c/kWh", "unitRateIncGst")
+    costs = calculate_costs(
+        values, {"billing_day": 24, "mappings": {usage: rate}, "supply": []}, TODAY
+    )
+    assert costs[f"cost_{rate}"].state == 0
+    assert costs["cost_total"].state == 0
+    assert costs["cost_total"].attributes["partial"] is False
+    assert costs["cost_total"].attributes["rate_basis"] == "current ex GST"
