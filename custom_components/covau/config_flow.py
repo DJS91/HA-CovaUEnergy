@@ -111,7 +111,9 @@ class CostFlow:
             errors=errors,
         )
 
-    def _price_options(self, units: set[str]) -> list[SelectOptionDict]:
+    def _price_options(
+        self, units: set[str], *, include_rate: bool = False
+    ) -> list[SelectOptionDict]:
         options = []
         for key, value in self._cost_values.items():
             tariff = value.attributes.get("tariff")
@@ -120,9 +122,12 @@ class CostFlow:
                 and value.unit in units
                 and key == stable_key("price", tariff, value.unit, "unitRateIncGst")
             ):
-                options.append(
-                    SelectOptionDict(value=key, label=f"{tariff} ({value.unit}, inc GST)")
-                )
+                if include_rate:
+                    rate = value.state if value.state is not None else "Unknown"
+                    label = f"{tariff} ({rate} {value.unit})"
+                else:
+                    label = f"{tariff} ({value.unit}, inc GST)"
+                options.append(SelectOptionDict(value=key, label=label))
         return sorted(options, key=lambda option: option["label"])
 
     async def async_step_cost_mapping(
@@ -141,7 +146,9 @@ class CostFlow:
         units = {"c/kWh", "$/kWh", "c/MJ", "$/MJ"}
         if usage and usage.unit:
             units = {unit for unit in units if unit.endswith(f"/{usage.unit}")}
-        options = [SelectOptionDict(value=_NONE, label="Do not map")] + self._price_options(units)
+        options = [SelectOptionDict(value=_NONE, label="Do not map")] + self._price_options(
+            units, include_rate=True
+        )
         previous = self._old_mappings.get(key, _NONE)
         if previous != _NONE and not any(option["value"] == previous for option in options):
             options.append(

@@ -17,7 +17,7 @@ from custom_components.covau import async_setup_entry, async_unload_entry  # noq
 from custom_components.covau.api import CovaUAuthError, CovaUError  # noqa: E402
 from custom_components.covau.config_flow import CovaUConfigFlow, CovaUOptionsFlow  # noqa: E402
 from custom_components.covau.coordinator import CovaUCoordinator  # noqa: E402
-from custom_components.covau.models import Value, stable_key  # noqa: E402
+from custom_components.covau.models import Value, normalize, stable_key  # noqa: E402
 from custom_components.covau.sensor import CovaUSensor  # noqa: E402
 from custom_components.covau.sensor import async_setup_entry as setup_sensors  # noqa: E402
 
@@ -200,6 +200,35 @@ async def test_cost_setup_maps_usage_and_supply(snapshot):
         "supply": [supply],
     }
     session.close.assert_awaited_once()
+
+
+async def test_usage_tariff_options_show_current_rate(snapshot):
+    snapshot["pricings"][2]["unitRateIncGst"] = "-15"
+    snapshot["pricings"][3]["unitRateIncGst"] = "0"
+    snapshot["pricings"].append(
+        {"usageDesc": "Unavailable", "unitDesc": "c/kWh", "unitRateIncGst": None}
+    )
+    flow = CovaUConfigFlow()
+    flow.hass = MagicMock()
+    flow._cost_values = normalize(snapshot, "123", date(2026, 10, 25))
+    flow._usage_keys = [stable_key("usage", "Off Peak")]
+    flow._usage_index = 0
+    flow._old_mappings = {}
+    result = await flow.async_step_cost_mapping()
+    selector = next(iter(result["data_schema"].schema.values()))
+    options = {option["value"]: option["label"] for option in selector.config["options"]}
+    assert options[stable_key("price", "Off Peak Usage - Step 1", "c/kWh", "unitRateIncGst")] == (
+        "Off Peak Usage - Step 1 (26.906 c/kWh)"
+    )
+    assert options[stable_key("price", "Feed-in Peak - Step 1", "c/kWh", "unitRateIncGst")] == (
+        "Feed-in Peak - Step 1 (-15.0 c/kWh)"
+    )
+    assert options[stable_key("price", "Free Usage - Step 1", "c/kWh", "unitRateIncGst")] == (
+        "Free Usage - Step 1 (0.0 c/kWh)"
+    )
+    assert options[stable_key("price", "Unavailable", "c/kWh", "unitRateIncGst")] == (
+        "Unavailable (Unknown c/kWh)"
+    )
 
 
 async def test_old_ex_gst_entities_removed():

@@ -39,6 +39,7 @@ release's `probatio` schema API. Older releases have not been validated.
 5. Select the relevant energy account/service from the authenticated account list.
 6. Optionally enable cost estimates, enter the monthly billing start day, map each
    usage category to its GST-inclusive tariff, and select any daily supply charges.
+   The mapping dropdown shows each tariff's current rate.
    Existing entries can change these settings using **Configure** on the integration.
 
 Add the integration again for another service. The internal service identifier
