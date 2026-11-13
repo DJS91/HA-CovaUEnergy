@@ -38,7 +38,7 @@ release's `probatio` schema API. Older releases have not been validated.
 4. Enter your **account number** and **password**.
 5. Select the relevant energy account/service from the authenticated account list.
 6. Optionally enable cost estimates, enter the monthly billing start day, map each
-   usage category to its GST-inclusive tariff, and select any daily supply charges.
+   usage category to its tariff, and select any daily supply charges.
    The mapping dropdown shows each tariff's current rate.
    Existing entries can change these settings using **Configure** on the integration.
 
@@ -109,11 +109,15 @@ Recording the history attributes can increase database size.
 ### Pricings
 
 - **Active pricings**: number of distinct currently effective tariff description/unit pairs.
-- **Price DESCRIPTION inc GST** per tariff. Ex-GST price sensors are removed.
+- **Price DESCRIPTION inc GST** per consumption or supply tariff.
+- **Price DESCRIPTION (ex GST)** per feed-in tariff, using CovaU's supplied ex-GST rate.
 - Units are retained exactly as supplied: for example `c/Day` and `c/kWh`, not dollars.
 - Zero/free and negative/feed-in prices are retained.
-- Blank inc-GST values stay unknown; GST is never calculated or assumed.
+- Blank selected rates stay unknown; GST is never calculated or assumed.
 - Attributes include the tariff description and effective start/end dates.
+
+Feed-in tariffs are identified by `feed-in`, `feed in` or `FiT` in their
+provider descriptions. Their rate basis is also exposed as an attribute.
 
 For successive tariff periods with the same description/unit, the most recently
 started currently effective period is selected. Non-effective tariffs are unknown.
@@ -132,9 +136,10 @@ Map all applicable categories and supply charges to include them in the total.
 
 The cycle starts on the selected day each month, or the last day in shorter months.
 Usage costs cover available completed daily readings through yesterday; selected
-daily supply charges include today. Prices are the **current** GST-inclusive rates
-applied to the entire cycle, not historical rates. The result is an estimate, not
-an invoice: tariff tiers, discounts, credits and other charges are not inferred.
+daily supply charges include today. The **current** inc-GST rates for consumption
+and supply and ex-GST rates for feed-in are applied to the entire cycle, not
+historical rates. The result is an estimate, not an invoice: tariff tiers,
+discounts, credits and other charges are not inferred.
 
 Each cost sensor exposes `cycle_start` and `partial` attributes. Missing readings,
 unavailable rates, and incompatible or unknown usage units make the estimate

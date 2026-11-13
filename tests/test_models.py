@@ -21,13 +21,13 @@ def test_latest_day_not_latest_per_category(snapshot):
 
 
 def test_pricing_keeps_cents_zero_negatives_and_unknown_gst(snapshot):
-    snapshot["pricings"][2]["unitRateIncGst"] = "-15.00"
     values = normalize(snapshot, "123", TODAY)
     assert values["pricing_count"].state == 4
     negative = values[stable_key("price", "Feed-in Peak - Step 1", "c/kWh", "unitRateIncGst")]
     assert negative.state == -15
     assert negative.unit == "c/kWh"
     assert negative.attributes["start_date"] == "2026-07-01"
+    assert negative.attributes["rate_basis"] == "ex GST"
     assert stable_key("price", "Free Usage - Step 1", "c/kWh", "unitRate") not in values
     assert (
         values[stable_key("price", "Free Usage - Step 1", "c/kWh", "unitRateIncGst")].state is None
@@ -36,6 +36,36 @@ def test_pricing_keeps_cents_zero_negatives_and_unknown_gst(snapshot):
         values[stable_key("price", "Daily Supply Charge", "c/Day", "unitRateIncGst")].state
         == 151.998
     )
+
+
+@pytest.mark.parametrize(
+    ("name", "rate", "expected"),
+    [
+        ("Feed-in Peak - Step 1", "-0.15", -0.15),
+        ("Feed in Off Peak", "-0.05", -0.05),
+        ("Standard FiT", "0", 0.0),
+        ("Feed-in Peak - Step 1", "", None),
+    ],
+)
+def test_feed_in_uses_provider_ex_gst_rate(snapshot, name, rate, expected):
+    snapshot["pricings"][2].update(
+        usageDesc=name, unitDesc="$/kWh", unitRate=rate, unitRateIncGst="-99"
+    )
+    key = stable_key("price", name, "$/kWh", "unitRateIncGst")
+    value = normalize(snapshot, "123", TODAY)[key]
+    assert value.state == expected
+    assert value.attributes["rate_basis"] == "ex GST"
+    assert "ex GST" in value.name
+
+
+def test_feed_in_rate_is_not_guessed_when_inactive_or_invalid(snapshot):
+    row = snapshot["pricings"][2]
+    key = stable_key("price", row["usageDesc"], row["unitDesc"], "unitRateIncGst")
+    row["startDate"] = "01/01/2027"
+    assert normalize(snapshot, "123", TODAY)[key].state is None
+    row.update(startDate="01/07/2026", unitRate="invalid")
+    with pytest.raises(CovaUDataError, match="Invalid numeric value"):
+        normalize(snapshot, "123", TODAY)
 
 
 def test_privacy_and_billing_unknowns(snapshot):

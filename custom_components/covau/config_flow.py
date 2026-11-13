@@ -124,9 +124,9 @@ class CostFlow:
             ):
                 if include_rate:
                     rate = value.state if value.state is not None else "Unknown"
-                    label = f"{tariff} ({rate} {value.unit})"
+                    label = f"{tariff} ({rate} {value.unit}, {value.attributes['rate_basis']})"
                 else:
-                    label = f"{tariff} ({value.unit}, inc GST)"
+                    label = f"{tariff} ({value.unit}, {value.attributes['rate_basis']})"
                 options.append(SelectOptionDict(value=key, label=label))
         return sorted(options, key=lambda option: option["label"])
 

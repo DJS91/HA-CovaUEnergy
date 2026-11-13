@@ -31,7 +31,7 @@ def cycle_start(today: date, day: int) -> date:
 def calculate_costs(
     values: dict[str, Value], config: dict[str, Any], today: date
 ) -> dict[str, Value]:
-    """Estimate mapped costs in AUD using today's GST-inclusive prices."""
+    """Estimate mapped costs in AUD using today's selected tariff rates."""
     if not isinstance(config, dict):
         raise CovaUDataError("Invalid cost configuration")
     if not config:
@@ -58,9 +58,12 @@ def calculate_costs(
     total = Decimal(0)
     has_total = False
     total_partial = False
+    rate_bases: set[str] = set()
     expected_days = (today - start).days
     for price_key in sorted(set(grouped) | set(supply)):
         price = values.get(price_key)
+        rate_basis = price.attributes.get("rate_basis", "unknown") if price else "unknown"
+        rate_bases.add(rate_basis)
         rate = price.state if price else None
         is_supply = price_key in supply
         units = {"c/Day", "$/Day"} if is_supply else {"c/kWh", "$/kWh", "c/MJ", "$/MJ"}
@@ -117,7 +120,7 @@ def calculate_costs(
                 "partial": partial,
                 "missing_readings": missing,
                 "rate_available": bool(rate_known),
-                "rate_basis": "current inc GST",
+                "rate_basis": f"current {rate_basis}",
                 "supply_through": today.isoformat() if is_supply else None,
             },
         )
@@ -131,7 +134,7 @@ def calculate_costs(
             attributes={
                 "cycle_start": start.isoformat(),
                 "partial": total_partial,
-                "rate_basis": "current inc GST",
+                "rate_basis": f"current {', '.join(sorted(rate_bases))}",
             },
         )
     return result

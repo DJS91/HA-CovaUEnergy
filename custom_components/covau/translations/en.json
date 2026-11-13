@@ -27,7 +27,7 @@
       },
       "cost_mapping": {
         "title": "Map usage to a tariff",
-        "description": "Choose the GST-inclusive tariff for {category}, or leave it unmapped.",
+        "description": "Choose a tariff for {category}, or leave it unmapped. Feed-in rates are ex GST; other rates are inc GST.",
         "data": {
           "tariff": "Tariff"
         }
@@ -67,7 +67,7 @@
       },
       "cost_mapping": {
         "title": "Map usage to a tariff",
-        "description": "Choose the GST-inclusive tariff for {category}, or leave it unmapped.",
+        "description": "Choose a tariff for {category}, or leave it unmapped. Feed-in rates are ex GST; other rates are inc GST.",
         "data": {
           "tariff": "Tariff"
         }

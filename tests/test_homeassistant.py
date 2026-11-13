@@ -203,7 +203,6 @@ async def test_cost_setup_maps_usage_and_supply(snapshot):
 
 
 async def test_usage_tariff_options_show_current_rate(snapshot):
-    snapshot["pricings"][2]["unitRateIncGst"] = "-15"
     snapshot["pricings"][3]["unitRateIncGst"] = "0"
     snapshot["pricings"].append(
         {"usageDesc": "Unavailable", "unitDesc": "c/kWh", "unitRateIncGst": None}
@@ -218,22 +217,30 @@ async def test_usage_tariff_options_show_current_rate(snapshot):
     selector = next(iter(result["data_schema"].schema.values()))
     options = {option["value"]: option["label"] for option in selector.config["options"]}
     assert options[stable_key("price", "Off Peak Usage - Step 1", "c/kWh", "unitRateIncGst")] == (
-        "Off Peak Usage - Step 1 (26.906 c/kWh)"
+        "Off Peak Usage - Step 1 (26.906 c/kWh, inc GST)"
     )
     assert options[stable_key("price", "Feed-in Peak - Step 1", "c/kWh", "unitRateIncGst")] == (
-        "Feed-in Peak - Step 1 (-15.0 c/kWh)"
+        "Feed-in Peak - Step 1 (-15.0 c/kWh, ex GST)"
     )
     assert options[stable_key("price", "Free Usage - Step 1", "c/kWh", "unitRateIncGst")] == (
-        "Free Usage - Step 1 (0.0 c/kWh)"
+        "Free Usage - Step 1 (0.0 c/kWh, inc GST)"
     )
     assert options[stable_key("price", "Unavailable", "c/kWh", "unitRateIncGst")] == (
-        "Unavailable (Unknown c/kWh)"
+        "Unavailable (Unknown c/kWh, inc GST)"
     )
 
 
 async def test_old_ex_gst_entities_removed():
     coordinator = MagicMock()
-    coordinator.data = {}
+    feed_key = stable_key("price", "Feed-in Peak", "c/kWh", "unitRateIncGst")
+    coordinator.data = {
+        feed_key: Value(
+            "Price Feed-in Peak (ex GST)",
+            -15,
+            "c/kWh",
+            attributes={"tariff": "Feed-in Peak"},
+        )
+    }
     config_entry = entry()
     config_entry.runtime_data = coordinator
     registry = MagicMock()
@@ -252,6 +259,11 @@ async def test_old_ex_gst_entities_removed():
             unique_id="0000123_123_usage_abc",
             original_name="Usage ex GST",
             entity_id="sensor.usage",
+        ),
+        SimpleNamespace(
+            unique_id=f"0000123_123_{feed_key}",
+            original_name="Price Feed-in Peak ex GST",
+            entity_id="sensor.feed_in",
         ),
     ]
     with (

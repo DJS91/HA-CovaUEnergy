@@ -35,7 +35,6 @@ def test_invalid_cycle_start(day):
 
 
 def test_estimated_costs_include_negative_feed_in_and_supply(snapshot):
-    snapshot["pricings"][2]["unitRateIncGst"] = "-15"
     values = normalize(snapshot, "123", TODAY)
     config = {"billing_day": 23, "mappings": {USAGE: RATE, FEED: FEED_RATE}, "supply": [SUPPLY]}
     costs = calculate_costs(values, config, TODAY)
@@ -46,11 +45,14 @@ def test_estimated_costs_include_negative_feed_in_and_supply(snapshot):
         (0.004 + 7.426) * 0.26906 - 13.398 * 0.15 + 3 * 1.51998
     )
     assert costs[f"cost_{FEED_RATE}"].attributes["missing_readings"] == 1
+    assert costs[f"cost_{FEED_RATE}"].attributes["rate_basis"] == "current ex GST"
+    assert costs["cost_total"].attributes["rate_basis"] == "current ex GST, inc GST"
     assert costs["cost_total"].attributes["partial"] is True
     assert costs[f"cost_{SUPPLY}"].attributes["supply_through"] == "2026-10-25"
 
 
 def test_missing_rate_or_usage_is_not_assumed_zero(snapshot):
+    snapshot["pricings"][2]["unitRate"] = ""
     values = normalize(snapshot, "123", TODAY)
     config = {"billing_day": 23, "mappings": {FEED: FEED_RATE}, "supply": [SUPPLY]}
     costs = calculate_costs(values, config, TODAY)
@@ -140,3 +142,14 @@ def test_zero_rate_is_a_known_zero_cost(snapshot):
     )
     assert costs["cost_total"].state == 0
     assert costs["cost_total"].attributes["partial"] is False
+
+
+def test_zero_feed_in_rate_is_a_known_zero_cost(snapshot):
+    snapshot["pricings"][2]["unitRate"] = "0"
+    values = normalize(snapshot, "123", TODAY)
+    costs = calculate_costs(
+        values, {"billing_day": 24, "mappings": {FEED: FEED_RATE}, "supply": []}, TODAY
+    )
+    assert costs[f"cost_{FEED_RATE}"].state == 0
+    assert costs["cost_total"].attributes["partial"] is False
+    assert costs["cost_total"].attributes["rate_basis"] == "current ex GST"

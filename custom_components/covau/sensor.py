@@ -28,9 +28,13 @@ async def async_setup_entry(
         for value in coordinator.data.values()
         if (tariff := value.attributes.get("tariff")) and value.unit
     }
+    current_price_ids = {
+        f"{entry.unique_id}_{key}" for key in coordinator.data if key.startswith("price_")
+    }
     for registered in er.async_entries_for_config_entry(registry, entry.entry_id):
         if registered.unique_id in old_price_ids or (
             registered.unique_id.startswith(prefix)
+            and registered.unique_id not in current_price_ids
             and (registered.original_name or "").endswith(" ex GST")
         ):
             registry.async_remove(registered.entity_id)

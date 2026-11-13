@@ -1,5 +1,6 @@
 """Normalize provider data without guessing missing readings or GST."""
 
+import re
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
@@ -176,14 +177,18 @@ def normalize(snapshot: dict[str, Any], service_id: str, today: date) -> dict[st
         chosen = active[0] if active else None
         if chosen:
             active_count += 1
+        feed_in = re.search(r"\b(?:feed[\s-]*in|fit)\b", description, re.IGNORECASE) is not None
+        rate_field = "unitRate" if feed_in else "unitRateIncGst"
+        rate_basis = "ex GST" if feed_in else "inc GST"
         attrs = {
             "tariff": description,
             "start_date": chosen[0].isoformat() if chosen and chosen[0] else None,
             "end_date": chosen[1].isoformat() if chosen and chosen[1] else None,
+            "rate_basis": rate_basis,
         }
         result[stable_key("price", description, unit, "unitRateIncGst")] = Value(
-            f"Price {description} inc GST",
-            number(chosen[2].get("unitRateIncGst")) if chosen else None,
+            f"Price {description} ({rate_basis})" if feed_in else f"Price {description} inc GST",
+            number(chosen[2].get(rate_field)) if chosen else None,
             unit=unit,
             attributes=attrs,
         )
