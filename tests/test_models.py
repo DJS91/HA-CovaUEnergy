@@ -50,6 +50,22 @@ def test_privacy_and_billing_unknowns(snapshot):
         assert values[f"finance_{key}"].state is None
 
 
+@pytest.mark.parametrize("key", ["invoiceDate", "invDueDate", "lastPayDate", "nextReadDate"])
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("11/27/2026 00:00:00", date(2026, 11, 27)),
+        ("11/10/2026 00:00:00", date(2026, 11, 10)),
+        ("Unknown", None),
+        (None, None),
+        ("2026-11-10T00:00:00Z", date(2026, 11, 10)),
+    ],
+)
+def test_finance_dates_are_month_first(snapshot, key, value, expected):
+    snapshot["finance"][key] = value
+    assert normalize(snapshot, "123", TODAY)[f"finance_{key}"].state == expected
+
+
 def test_period_selection_and_identity_are_stable(snapshot):
     old = deepcopy(snapshot["pricings"][1])
     old.update(unitRate="10", startDate="01/01/2026", endDate="30/06/2026")
@@ -134,8 +150,11 @@ def test_unknown_dates(value):
 
 
 def test_date_formats():
-    assert provider_date("10/23/2026 00:00:00", usage=True) == date(2026, 10, 23)
+    assert provider_date("10/23/2026 00:00:00", month_first=True) == date(2026, 10, 23)
     assert provider_date("01/07/2026") == date(2026, 7, 1)
     assert provider_date("2026-10-23T00:00:00Z") == date(2026, 10, 23)
+    assert provider_date("2026-10-23T00:00:00Z", month_first=True) == date(2026, 10, 23)
     with pytest.raises(CovaUDataError):
         provider_date("not a date")
+    with pytest.raises(CovaUDataError, match="^Unsupported provider date format$"):
+        provider_date("27/11/2026", month_first=True)

@@ -52,6 +52,12 @@ HACS makes updates available in Home Assistant; applying them is a separate
 update action. A manually copied installation must be updated by replacing its
 integration files.
 
+### 0.1.6
+
+Fix finance dates (invoice/due/payment/next read) being parsed day-first; CovaU
+sends them month-first. Fixes 'Unsupported provider date format' and swapped
+invoice dates.
+
 ## Refresh schedule
 
 All four sections refresh together:
@@ -129,10 +135,10 @@ Disabled entities may be hidden by the default entity-list filter.
   cycle and customer offering.
 
 Blank amounts/dates and `Unknown` dates remain unknown. Zero balances remain zero.
-Portal slash dates are interpreted as Australian day/month/year; daily-usage slash
-timestamps are month/day/year, matching the supplied usage output. ISO dates and
-timestamps are also accepted. Unexpected nonempty date formats cause an explicit
-update error instead of guessing.
+Pricing slash dates are interpreted as Australian day/month/year; finance and
+daily-usage slash dates are month/day/year. ISO dates and timestamps are also
+accepted. Unexpected nonempty date formats cause an explicit update error instead
+of guessing.
 
 Customer and finance endpoints are **customer-level**, with no service parameter.
 Their values may be repeated across multiple selected services for the same login;

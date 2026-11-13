@@ -39,8 +39,8 @@ def number(value: Any) -> float | None:
     return float(result)
 
 
-def provider_date(value: Any, *, usage: bool = False) -> date | None:
-    """Usage is month-first; portal rate/billing dates are day-first."""
+def provider_date(value: Any, *, month_first: bool = False) -> date | None:
+    """Usage/daily and customer/finance are month-first; utility/rate-details is day-first."""
     if value is None or value == "" or str(value).strip().lower() in {"unknown", "n/a"}:
         return None
     text = str(value).strip()
@@ -48,7 +48,9 @@ def provider_date(value: Any, *, usage: bool = False) -> date | None:
         return datetime.fromisoformat(text.replace("Z", "+00:00")).date()
     except ValueError:
         pass
-    formats = ("%m/%d/%Y %H:%M:%S", "%m/%d/%Y") if usage else ("%d/%m/%Y", "%d/%m/%Y %H:%M:%S")
+    formats = (
+        ("%m/%d/%Y %H:%M:%S", "%m/%d/%Y") if month_first else ("%d/%m/%Y", "%d/%m/%Y %H:%M:%S")
+    )
     for fmt in formats:
         try:
             return datetime.strptime(text, fmt).date()
@@ -119,7 +121,7 @@ def normalize(snapshot: dict[str, Any], service_id: str, today: date) -> dict[st
         if identifier(row.get("seqProductItemId"), "usage service id") != service_id:
             raise CovaUDataError("Usage response contains another service")
         category = identifier(row.get("category"), "usage category")
-        day = provider_date(row.get("readDatetime"), usage=True)
+        day = provider_date(row.get("readDatetime"), month_first=True)
         if day is None:
             raise CovaUDataError("Usage reading has no date")
         if day >= today:
@@ -198,7 +200,7 @@ def normalize(snapshot: dict[str, Any], service_id: str, today: date) -> dict[st
         )
     for key, label in FINANCE_DATES.items():
         result[f"finance_{key}"] = Value(
-            label, provider_date(finance.get(key)), device_class="date"
+            label, provider_date(finance.get(key), month_first=True), device_class="date"
         )
     for key, label in FINANCE_TEXT.items():
         result[f"finance_{key}"] = Value(
