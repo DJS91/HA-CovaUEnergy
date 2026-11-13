@@ -5,6 +5,7 @@ from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -12,7 +13,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import CovaUConfigEntry
 from .const import CONF_SERVICE_ID, CONF_SERVICE_LABEL, DOMAIN
 from .coordinator import CovaUCoordinator
-from .models import Value
+from .models import Value, stable_key
 
 
 async def async_setup_entry(
@@ -20,6 +21,19 @@ async def async_setup_entry(
 ) -> None:
     """Add new categories/tariffs if the provider introduces them later."""
     coordinator = entry.runtime_data
+    registry = er.async_get(hass)
+    prefix = f"{entry.unique_id}_price_"
+    old_price_ids = {
+        f"{entry.unique_id}_{stable_key('price', tariff, value.unit, 'unitRate')}"
+        for value in coordinator.data.values()
+        if (tariff := value.attributes.get("tariff")) and value.unit
+    }
+    for registered in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if registered.unique_id in old_price_ids or (
+            registered.unique_id.startswith(prefix)
+            and (registered.original_name or "").endswith(" ex GST")
+        ):
+            registry.async_remove(registered.entity_id)
     known: set[str] = set()
 
     @callback

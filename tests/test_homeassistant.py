@@ -15,9 +15,9 @@ from homeassistant.helpers.update_coordinator import UpdateFailed  # noqa: E402
 
 from custom_components.covau import async_setup_entry, async_unload_entry  # noqa: E402
 from custom_components.covau.api import CovaUAuthError, CovaUError  # noqa: E402
-from custom_components.covau.config_flow import CovaUConfigFlow  # noqa: E402
+from custom_components.covau.config_flow import CovaUConfigFlow, CovaUOptionsFlow  # noqa: E402
 from custom_components.covau.coordinator import CovaUCoordinator  # noqa: E402
-from custom_components.covau.models import Value  # noqa: E402
+from custom_components.covau.models import Value, stable_key  # noqa: E402
 from custom_components.covau.sensor import CovaUSensor  # noqa: E402
 from custom_components.covau.sensor import async_setup_entry as setup_sensors  # noqa: E402
 
@@ -118,7 +118,11 @@ async def test_new_categories_are_added_on_later_updates():
     config_entry = entry()
     config_entry.runtime_data = coordinator
     add_entities = MagicMock()
-    await setup_sensors(MagicMock(), config_entry, add_entities)
+    with (
+        patch("custom_components.covau.sensor.er.async_get"),
+        patch("custom_components.covau.sensor.er.async_entries_for_config_entry", return_value=[]),
+    ):
+        await setup_sensors(MagicMock(), config_entry, add_entities)
     assert len(add_entities.call_args.args[0]) == 1
     on_update = coordinator.async_add_listener.call_args.args[0]
     coordinator.data["second"] = Value("Second category", 2)
@@ -154,9 +158,94 @@ async def test_credentials_then_service_selection():
     result = await flow.async_step_account({"service_id": "123"})
     flow.async_set_unique_id.assert_awaited_once_with("0000123_123")
     flow._abort_if_unique_id_configured.assert_called_once()
+    assert result["step_id"] == "cost_setup"
+    result = await flow.async_step_cost_setup({"enabled": False, "billing_day": 1})
     assert result["data"]["service_id"] == "123"
     assert result["data"]["account_number"] == "0000123"
     assert "accessToken" not in result["data"]
+
+
+async def test_cost_setup_maps_usage_and_supply(snapshot):
+    flow = CovaUConfigFlow()
+    flow.hass = MagicMock()
+    flow.context = {"source": "user"}
+    flow._cost_entry_data = entry().data
+    session = SimpleNamespace(close=AsyncMock())
+    client = SimpleNamespace(snapshot=AsyncMock(return_value=snapshot))
+    with (
+        patch(
+            "custom_components.covau.config_flow.async_create_clientsession", return_value=session
+        ),
+        patch("custom_components.covau.config_flow.CovaUClient", return_value=client),
+        patch(
+            "custom_components.covau.config_flow.dt_util.now", return_value=datetime(2026, 10, 25)
+        ),
+    ):
+        result = await flow.async_step_cost_setup({"enabled": True, "billing_day": 31})
+    assert result["step_id"] == "cost_mapping"
+    assert len(flow._usage_keys) == 4
+    price = stable_key("price", "Off Peak Usage - Step 1", "c/kWh", "unitRateIncGst")
+    usage = stable_key("usage", "Off Peak")
+    while result["step_id"] == "cost_mapping":
+        key = flow._usage_keys[flow._usage_index]
+        result = await flow.async_step_cost_mapping(
+            {"tariff": price if key == usage else "__none__"}
+        )
+    assert result["step_id"] == "cost_supply"
+    supply = stable_key("price", "Daily Supply Charge", "c/Day", "unitRateIncGst")
+    result = await flow.async_step_cost_supply({"supply": [supply]})
+    assert result["data"]["cost_config"] == {
+        "billing_day": 31,
+        "mappings": {usage: price},
+        "supply": [supply],
+    }
+    session.close.assert_awaited_once()
+
+
+async def test_old_ex_gst_entities_removed():
+    coordinator = MagicMock()
+    coordinator.data = {}
+    config_entry = entry()
+    config_entry.runtime_data = coordinator
+    registry = MagicMock()
+    entries = [
+        SimpleNamespace(
+            unique_id="0000123_123_price_abc",
+            original_name="Price Example ex GST",
+            entity_id="sensor.old",
+        ),
+        SimpleNamespace(
+            unique_id="0000123_123_price_def",
+            original_name="Price Example inc GST",
+            entity_id="sensor.keep",
+        ),
+        SimpleNamespace(
+            unique_id="0000123_123_usage_abc",
+            original_name="Usage ex GST",
+            entity_id="sensor.usage",
+        ),
+    ]
+    with (
+        patch("custom_components.covau.sensor.er.async_get", return_value=registry),
+        patch(
+            "custom_components.covau.sensor.er.async_entries_for_config_entry", return_value=entries
+        ),
+    ):
+        await setup_sensors(MagicMock(), config_entry, MagicMock())
+    registry.async_remove.assert_called_once_with("sensor.old")
+
+
+async def test_existing_entry_options_can_disable_costs():
+    flow = CovaUOptionsFlow()
+    flow.hass = MagicMock()
+    flow.handler = "test-entry"
+    config_entry = entry()
+    config_entry.options = {"cost_config": {"billing_day": 10, "mappings": {}, "supply": ["price"]}}
+    flow.hass.config_entries.async_get_known_entry.return_value = config_entry
+    result = await flow.async_step_init()
+    assert result["step_id"] == "init"
+    result = await flow.async_step_init({"enabled": False, "billing_day": 10})
+    assert result["data"] == {"cost_config": {}}
 
 
 async def test_reauth_updates_existing_entry_only():

@@ -21,13 +21,14 @@ def test_latest_day_not_latest_per_category(snapshot):
 
 
 def test_pricing_keeps_cents_zero_negatives_and_unknown_gst(snapshot):
+    snapshot["pricings"][2]["unitRateIncGst"] = "-15.00"
     values = normalize(snapshot, "123", TODAY)
     assert values["pricing_count"].state == 4
-    negative = values[stable_key("price", "Feed-in Peak - Step 1", "c/kWh", "unitRate")]
+    negative = values[stable_key("price", "Feed-in Peak - Step 1", "c/kWh", "unitRateIncGst")]
     assert negative.state == -15
     assert negative.unit == "c/kWh"
     assert negative.attributes["start_date"] == "2026-07-01"
-    assert values[stable_key("price", "Free Usage - Step 1", "c/kWh", "unitRate")].state == 0
+    assert stable_key("price", "Free Usage - Step 1", "c/kWh", "unitRate") not in values
     assert (
         values[stable_key("price", "Free Usage - Step 1", "c/kWh", "unitRateIncGst")].state is None
     )
@@ -68,15 +69,15 @@ def test_finance_dates_are_month_first(snapshot, key, value, expected):
 
 def test_period_selection_and_identity_are_stable(snapshot):
     old = deepcopy(snapshot["pricings"][1])
-    old.update(unitRate="10", startDate="01/01/2026", endDate="30/06/2026")
+    old.update(unitRateIncGst="10", startDate="01/01/2026", endDate="30/06/2026")
     future = deepcopy(old)
-    future.update(unitRate="99", startDate="01/01/2027", endDate="")
+    future.update(unitRateIncGst="99", startDate="01/01/2027", endDate="")
     before = normalize(snapshot, "123", TODAY)
     snapshot["pricings"].extend([old, future])
     after = normalize(snapshot, "123", TODAY)
-    key = stable_key("price", "Off Peak Usage - Step 1", "c/kWh", "unitRate")
+    key = stable_key("price", "Off Peak Usage - Step 1", "c/kWh", "unitRateIncGst")
     assert before.keys() == after.keys()
-    assert after[key].state == 24.46
+    assert after[key].state == 26.906
     # With only a future tariff, expose unknown rather than yesterday's or future price.
     snapshot["pricings"] = [future]
     assert normalize(snapshot, "123", TODAY)[key].state is None

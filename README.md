@@ -37,6 +37,9 @@ release's `probatio` schema API. Older releases have not been validated.
 3. Open **Settings > Devices & services > Add integration > CovaU**.
 4. Enter your **account number** and **password**.
 5. Select the relevant energy account/service from the authenticated account list.
+6. Optionally enable cost estimates, enter the monthly billing start day, map each
+   usage category to its GST-inclusive tariff, and select any daily supply charges.
+   Existing entries can change these settings using **Configure** on the integration.
 
 Add the integration again for another service. The internal service identifier
 (`seqProductItemId`) is taken from the selected lookup entry, not entered manually.
@@ -94,8 +97,8 @@ usage result also means unknown. New categories automatically get entities.
 
 Electricity readings use kWh only when the pricing units unambiguously identify kWh.
 MJ is supported similarly; otherwise usage units are left unspecified. Solar exports
-remain separate from imports. There are deliberately no guessed import totals, calculated
-bills, or `total_increasing` statistics.
+remain separate from imports. There are deliberately no guessed import totals or
+`total_increasing` statistics.
 
 These historical daily readings are **not cumulative meters** and are not directly
 suitable as Home Assistant Energy dashboard consumption sources. No energy state class
@@ -105,7 +108,7 @@ Recording the history attributes can increase database size.
 ### Pricings
 
 - **Active pricings**: number of distinct currently effective tariff description/unit pairs.
-- **Price DESCRIPTION ex GST** and **Price DESCRIPTION inc GST** per tariff.
+- **Price DESCRIPTION inc GST** per tariff. Ex-GST price sensors are removed.
 - Units are retained exactly as supplied: for example `c/Day` and `c/kWh`, not dollars.
 - Zero/free and negative/feed-in prices are retained.
 - Blank inc-GST values stay unknown; GST is never calculated or assumed.
@@ -116,7 +119,28 @@ started currently effective period is selected. Non-effective tariffs are unknow
 Duplicate periods with the same effective start date are rejected as ambiguous.
 Tariff identity does not include its amount or effective dates, so price changes
 do not create replacement entities. New tariff descriptions/units get new entities.
-The integration does not attempt to map daily categories to tariff tiers.
+Tariff tiers are not automatically mapped to usage categories.
+
+### Optional cost estimates
+
+When enabled, the integration creates a current-cycle cost sensor for each selected
+tariff and supply charge, plus a total. A usage category can be mapped to one tariff;
+several categories mapped to the same tariff are added together. The total includes
+only mapped usage and selected supply charges, including negative feed-in rates.
+Map all applicable categories and supply charges to include them in the total.
+
+The cycle starts on the selected day each month, or the last day in shorter months.
+Usage costs cover available completed daily readings through yesterday; selected
+daily supply charges include today. Prices are the **current** GST-inclusive rates
+applied to the entire cycle, not historical rates. The result is an estimate, not
+an invoice: tariff tiers, discounts, credits and other charges are not inferred.
+
+Each cost sensor exposes `cycle_start` and `partial` attributes. Missing readings,
+unavailable rates, and incompatible or unknown usage units make the estimate
+partial; an individual cost is unknown if none of its components can be calculated.
+The total sums available costs and is marked partial if any selected cost is incomplete.
+The integration fetches a 35-day usage history, which covers a monthly billing cycle;
+the provider may return fewer days.
 
 ### Customer
 

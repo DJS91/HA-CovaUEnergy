@@ -12,5 +12,12 @@ def test_manifest_and_translations():
     assert manifest["requirements"] == []
     strings = json.loads((component / "strings.json").read_text())
     assert strings == json.loads((component / "translations" / "en.json").read_text())
-    assert set(strings["config"]["step"]) == {"user", "account"}
+    assert set(strings["config"]["step"]) == {
+        "user",
+        "account",
+        "cost_setup",
+        "cost_mapping",
+        "cost_supply",
+    }
+    assert set(strings["options"]["step"]) == {"init", "cost_mapping", "cost_supply"}
     assert (component / "config_flow.py").is_file()

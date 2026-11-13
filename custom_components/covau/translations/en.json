@@ -16,6 +16,28 @@
         "data": {
           "service_id": "Energy account / service"
         }
+      },
+      "cost_setup": {
+        "title": "Optional cost estimates",
+        "description": "Enable estimated billing-cycle costs and choose the monthly reset day. Short months reset on their last day.",
+        "data": {
+          "enabled": "Enable cost estimates",
+          "billing_day": "Billing cycle start day"
+        }
+      },
+      "cost_mapping": {
+        "title": "Map usage to a tariff",
+        "description": "Choose the GST-inclusive tariff for {category}, or leave it unmapped.",
+        "data": {
+          "tariff": "Tariff"
+        }
+      },
+      "cost_supply": {
+        "title": "Select supply charges",
+        "description": "Select daily supply charges to include. To change a previous mapping, restart configuration.",
+        "data": {
+          "supply": "Daily supply charges"
+        }
       }
     },
     "error": {
@@ -24,11 +46,46 @@
       "invalid_response": "CovaU returned an unsupported response. The provider may have changed its API.",
       "no_accounts": "CovaU did not return any selectable services.",
       "wrong_account": "Reauthenticate using the same account number as this integration entry.",
-      "service_unavailable": "The selected service is not available to this account."
+      "service_unavailable": "The selected service is not available to this account.",
+      "invalid_billing_day": "Choose a whole number between 1 and 31.",
+      "no_cost_mappings": "Select at least one usage tariff or daily supply charge."
     },
     "abort": {
       "already_configured": "This account and service are already configured.",
       "reauth_successful": "CovaU authentication was updated."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Optional cost estimates",
+        "description": "Enable estimated billing-cycle costs and choose the monthly reset day. Short months reset on their last day.",
+        "data": {
+          "enabled": "Enable cost estimates",
+          "billing_day": "Billing cycle start day"
+        }
+      },
+      "cost_mapping": {
+        "title": "Map usage to a tariff",
+        "description": "Choose the GST-inclusive tariff for {category}, or leave it unmapped.",
+        "data": {
+          "tariff": "Tariff"
+        }
+      },
+      "cost_supply": {
+        "title": "Select supply charges",
+        "description": "Select daily supply charges to include. To change a previous mapping, restart configuration.",
+        "data": {
+          "supply": "Daily supply charges"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "CovaU rejected authentication or access.",
+      "cannot_connect": "Cannot connect securely to CovaU.",
+      "invalid_response": "CovaU returned an unsupported response.",
+      "invalid_billing_day": "Choose a whole number between 1 and 31.",
+      "no_cost_mappings": "Select at least one usage tariff or daily supply charge."
     }
   }
 }

@@ -181,13 +181,12 @@ def normalize(snapshot: dict[str, Any], service_id: str, today: date) -> dict[st
             "start_date": chosen[0].isoformat() if chosen and chosen[0] else None,
             "end_date": chosen[1].isoformat() if chosen and chosen[1] else None,
         }
-        for field_name, label in (("unitRate", "ex GST"), ("unitRateIncGst", "inc GST")):
-            result[stable_key("price", description, unit, field_name)] = Value(
-                f"Price {description} {label}",
-                number(chosen[2].get(field_name)) if chosen else None,
-                unit=unit,
-                attributes=attrs,
-            )
+        result[stable_key("price", description, unit, "unitRateIncGst")] = Value(
+            f"Price {description} inc GST",
+            number(chosen[2].get("unitRateIncGst")) if chosen else None,
+            unit=unit,
+            attributes=attrs,
+        )
     result["pricing_count"] = Value("Active pricings", active_count)
 
     customer = snapshot["customer"]

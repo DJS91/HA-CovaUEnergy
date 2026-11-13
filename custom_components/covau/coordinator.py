@@ -11,7 +11,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .api import CovaUAuthError, CovaUClient, CovaUError
-from .const import DOMAIN
+from .const import CONF_COST_CONFIG, DOMAIN
+from .cost import calculate_costs
 from .models import Value, normalize
 
 _LOGGER = logging.getLogger(__name__)
@@ -30,6 +31,9 @@ class CovaUCoordinator(DataUpdateCoordinator[dict[str, Value]]):
         super().__init__(hass, _LOGGER, config_entry=entry, name=DOMAIN, update_interval=None)
         self._client = client
         self._service_id = service_id
+        self._cost_config = entry.options.get(
+            CONF_COST_CONFIG, entry.data.get(CONF_COST_CONFIG, {})
+        )
 
     def schedule_hourly(self, entry: ConfigEntry) -> None:
         """Tie the local wall-clock listener to this entry's lifecycle."""
@@ -44,7 +48,9 @@ class CovaUCoordinator(DataUpdateCoordinator[dict[str, Value]]):
         today = dt_util.now().date()
         try:
             snapshot = await self._client.snapshot(self._service_id, today)
-            return normalize(snapshot, self._service_id, today)
+            values = normalize(snapshot, self._service_id, today)
+            values.update(calculate_costs(values, self._cost_config, today))
+            return values
         except CovaUAuthError as err:
             raise ConfigEntryAuthFailed(str(err)) from err
         except CovaUError as err:
